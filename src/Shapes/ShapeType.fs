@@ -17,20 +17,20 @@ type ShapeType =
     | MultiPointM
     | MultiPatch
 
-let resolveShapeType (n : int) : ShapeType =
+let resolveShapeType (n : int) : Option<ShapeType> =
     match n with
-    | 0 -> Null
-    | 1 -> Point
-    | 3 -> PolyLine
-    | 5 -> Polygon
-    | 8 -> MultiPoint
-    | 11 -> PointZ
-    | 13 -> PolyLineZ
-    | 15 -> PolygonZ
-    | 18 -> MultiPointZ
-    | 21 -> PointM
-    | 23 -> PolyLineM
-    | 25 -> PolygonM
-    | 28 -> MultiPointM
-    | 31 -> MultiPatch
-    | _ -> Null // TODO - do something about this later?
+    | 0 -> Some(Null)
+    | 1 -> Some(Point)
+    | 3 -> Some(PolyLine)
+    | 5 -> Some(Polygon)
+    | 8 -> Some(MultiPoint)
+    | 11 -> Some(PointZ)
+    | 13 -> Some(PolyLineZ)
+    | 15 -> Some(PolygonZ)
+    | 18 -> Some(MultiPointZ)
+    | 21 -> Some(PointM)
+    | 23 -> Some(PolyLineM)
+    | 25 -> Some(PolygonM)
+    | 28 -> Some(MultiPointM)
+    | 31 -> Some(MultiPatch)
+    | _ -> None 

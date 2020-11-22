@@ -1,14 +1,14 @@
 
 module MainFileHeader
 
-open ShapeType.ShapeType
+open ShapeType
 // 100 bytes long total
 
 type Header = 
     { FileCode : int
       FileLength : int
       Version : int 
-      ShapeType : ShapeType 
+      ShapeType : ShapeType
       XMin : double 
       YMin : double
       XMax : double
