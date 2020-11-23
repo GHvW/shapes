@@ -1,17 +1,25 @@
 
 module Shapes
 
+
+type BoundingBox =
+    { XMin : double
+      YMin : double
+      XMax : double
+      YMax : double }
+
+
 type Point = 
     { X : double 
       Y : double }
 
 type MultiPoint =
-    { BoundingBox : double[] // size 4 array, [Xmin, Ymin, Xmax, Ymax]
+    { BoundingBox : BoundingBox // size 4 array, [Xmin, Ymin, Xmax, Ymax]
       NumPoints : int
       Points : Point[] } // size NumPoints array
 
 type PolyLine =
-    { BoundingBox : double[] // size 4 array, [Xmin, Ymin, Xmax, Ymax]
+    { BoundingBox : BoundingBox // size 4 array, [Xmin, Ymin, Xmax, Ymax]
       NumParts : int
       NumPoints : int
       Parts : int[] // size NumParts array
@@ -19,7 +27,7 @@ type PolyLine =
 
 
 type Polygon =
-    { BoundingBox : double[] // size 4 array, [Xmin, Ymin, Xmax, Ymax]
+    { BoundingBox : BoundingBox // size 4 array, [Xmin, Ymin, Xmax, Ymax]
       NumParts : int
       NumPoints : int
       Parts : int[] // size NumParts array
@@ -33,7 +41,7 @@ type PointM =
 
 // compose?
 type MultiPointM =
-    { BoundingBox : double[]
+    { BoundingBox : BoundingBox
       NumPoints : int
       Points : Point[]
       BoundingMeasureRange : double[]
@@ -41,7 +49,7 @@ type MultiPointM =
 
 // compose?
 type PolyLineM =
-    { BoundingBox : double[] // size 4 array, [Xmin, Ymin, Xmax, Ymax]
+    { BoundingBox : BoundingBox // size 4 array, [Xmin, Ymin, Xmax, Ymax]
       NumParts : int
       NumPoints : int
       Parts : int[] // size NumParts array
@@ -51,7 +59,7 @@ type PolyLineM =
 
 // compose?
 type PolygonM =
-    { BoundingBox : double[] // size 4 array, [Xmin, Ymin, Xmax, Ymax]
+    { BoundingBox : BoundingBox // size 4 array, [Xmin, Ymin, Xmax, Ymax]
       NumParts : int
       NumPoints : int
       Parts : int[] // size NumParts array
@@ -67,7 +75,7 @@ type PointZ =
 
 
 type MultiPointZ =
-    { BoundingBox : double[]
+    { BoundingBox : BoundingBox
       NumPoints : int
       Points : Point[]
       BoundingZRange : double[]
@@ -76,7 +84,7 @@ type MultiPointZ =
       Measures : double[] }
 
 type PolyLineZ =
-    { BoundingBox : double[] // size 4 array, [Xmin, Ymin, Xmax, Ymax]
+    { BoundingBox : BoundingBox // size 4 array, [Xmin, Ymin, Xmax, Ymax]
       NumParts : int
       NumPoints : int
       Parts : int[] // size NumParts array
@@ -88,7 +96,7 @@ type PolyLineZ =
 
 
 type PolygonZ =
-    { BoundingBox : double[] // size 4 array, [Xmin, Ymin, Xmax, Ymax]
+    { BoundingBox : BoundingBox // size 4 array, [Xmin, Ymin, Xmax, Ymax]
       NumParts : int
       NumPoints : int
       Parts : int[] // size NumParts array
@@ -117,7 +125,7 @@ let resolveMultiPatchPartType (n : int) : Option<MultiPatchPartType> =
     | _ -> None
 
 type MultiPatch = 
-    { BoundingBox : double[]
+    { BoundingBox : BoundingBox
       NumParts : int
       NumPoints : int
       Parts : int[]

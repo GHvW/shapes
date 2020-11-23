@@ -3,7 +3,7 @@ module Parser
 
 open System
 open System.IO
-
+open Shapes
 
 // TODO - these might not work, come back to this
 type ReaderParser<'a> =  BinaryReader -> Option<'a * BinaryReader>
@@ -27,6 +27,7 @@ type ReadBytes =
     | Double
 
 
+// TODO - bring these two together later
 let readerItem readBytes : ReaderParser<byte[]> = 
     fun (reader : BinaryReader) -> 
         match readBytes with
@@ -78,15 +79,35 @@ let arrayDouble = arrayItem Double
 //     (Array.get 4 arr, arr)
 
 
-let bindRead (parser : ReaderParser<'a>) (f : 'a -> ReaderParser<'b>) : ReaderParser<'b> =
+// TODO - same as above
+let bindRead (f : 'a -> ReaderParser<'b>) (parser : ReaderParser<'a>) : ReaderParser<'b> =
     fun (reader : BinaryReader) ->
         reader
         |> parser
         |> Option.bind (fun (item, reader') -> 
             (f item) reader')
 
-// let bindArray (parser : ArrayParser<'a>) (f : 'a -> ArrayParser<'b>) : ArrayParser<'b> =
 
+let bindArray (f : 'a -> ArrayParser<'b>) (parser : ArrayParser<'a>) : ArrayParser<'b> =
+    fun state ->
+        state
+        |> parser
+        |> Option.bind (fun (item, state') ->
+            (f item) state')
+
+
+let mapRead (f : 'a -> 'b) (parser : ReaderParser<'a>) : ReaderParser<'b> =
+    fun reader ->
+        reader
+        |> parser
+        |> Option.map (fun (item, reader') ->
+            (f item, reader'))
+
+
+let zero : ReaderParser<'a> = fun (reader : BinaryReader) -> None
+
+
+let ret it : ReaderParser<'a> = fun (reader : BinaryReader) -> Some(it, reader)
 
 // let takeDouble (reader : BinaryReader) : byte[] =
 //     reader.ReadBytes(8)
@@ -114,3 +135,40 @@ let bigEndianInt (bytes : byte[]) : int =
 let bigEndianDouble (bytes : byte[]) : double =
     BitConverter.ToDouble(reverseBytes bytes, 0)
 
+
+type ReaderParserBuilder() =
+    member this.Bind(parser, f) = bindRead f parser
+    member this.Return(item) = ret item
+    member this.Zero() = zero
+
+
+let readParse = ReaderParserBuilder()
+
+
+// let readThenConvert (converter : byte[] -> double) =
+//     readerDouble
+//     |> mapRead converter
+
+
+// let it = readParse {
+//     return "hi"
+// }
+
+let doubleIt = 
+    readerDouble 
+    |> mapRead littleEndianDouble
+
+
+let boundingBox = readParse {
+    let! xMin = doubleIt
+    let! yMin = doubleIt
+    let! xMax = doubleIt
+    let! yMax = doubleIt
+
+    return { 
+        XMin = xMin; 
+        YMin = yMin; 
+        XMax = xMax; 
+        YMax = yMax 
+    }
+}
