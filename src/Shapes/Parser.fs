@@ -153,10 +153,21 @@ let readParse = ReaderParserBuilder()
 // let it = readParse {
 //     return "hi"
 // }
+let intIt =
+    readerInt
+    |> mapRead littleEndianInt
+
 
 let doubleIt = 
     readerDouble 
     |> mapRead littleEndianDouble
+
+
+let point = readParse {
+    let! x = doubleIt 
+    let! y = doubleIt
+    return { X = x; Y = y }
+}
 
 
 let boundingBox = readParse {
