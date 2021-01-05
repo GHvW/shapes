@@ -3,23 +3,39 @@ module Parser
 
 open System
 open System.IO
+open System.Buffers.Binary
 open Shapes
+open Endian
+
+
+// TODO
+// Array, stream, Span, whatever
+// ReadOnlySpan has an implicit operator from A[] and ArraySegment<A> to ReadOnlySpan, so no conversions should be necessary
+// https://docs.microsoft.com/en-us/dotnet/api/system.readonlyspan-1?view=net-5.0
+// ReadOnlySpan.Slice will slice a readonly span into smaller segments
+// use BinaryPrimitives class, https://docs.microsoft.com/en-us/dotnet/api/system.buffers.binary.binaryprimitives?view=net-5.0
+// Main file header, first 4 bytes = 9994. can find endianness based on that
 
 // TODO - these might not work, come back to this
-type ReaderParser<'a> =  BinaryReader -> Option<'a * BinaryReader>
+// type ReaderParser<'a> =  BinaryReader -> Option<'a * BinaryReader>
 
+// using implicit operators from F#
+// let inline readonlyspan (x : ^a) : ReadOnlySpan<'a> = 
+//     (^a : (static member op_Implicit : ^a -> ReadOnlySpan<'a>) x)
 
-type ArrayParser<'a> = (int * ArraySegment<byte>) -> Option<'a * (int * ArraySegment<byte>)>
-
+// type ArrayParser<'a> = (int * ArraySegment<byte>) -> Option<'a * (int * ArraySegment<byte>)>
+// type Parser<'a> = (int * ReadOnlySpan<byte>) -> Option<'a * (int * ReadOnlySpan<byte>)
+// type Parser<'a> = ReadOnlySpan<byte> -> Option<'a * ReadOnlySpan<byte>>
+type Parser<'a> = ArraySegment<byte> -> Option<'a * ArraySegment<byte>>
 
 // type Parser<'a> =
 //     | Reader of ReaderParser<'a>
 //     | Array of ArrayParser<'a>
 
 
-type Input =
-    | BinaryReader of BinaryReader
-    | ByteArray of int * ArraySegment<byte>
+// type Input =
+//     | BinaryReader of BinaryReader
+//     | ByteArray of int * ArraySegment<byte>
 
 
 type ReadBytes =
@@ -27,154 +43,101 @@ type ReadBytes =
     | Double
 
 
-// TODO - bring these two together later
-let readerItem readBytes : ReaderParser<byte[]> = 
-    fun (reader : BinaryReader) -> 
+let item readBytes : Parser<ArraySegment<byte>> =
+    fun (span) ->
+        // let (index, span) = state
         match readBytes with
-        | Int -> 
+        | Int ->
             try
-                Some(reader.ReadBytes(4), reader)
+                Some(span.Slice(0, 4), span.Slice(4))
             with
                 | _ -> None
-        | Double -> 
+        | Double ->
             try
-                Some(reader.ReadBytes(8), reader)
-            with
-                | _ -> None
-
-
-let arrayItem readBytes : ArrayParser<ArraySegment<byte>> =
-    fun (state : int * ArraySegment<byte>) ->
-        let (index, arr) = state
-        match readBytes with
-        | Int -> 
-            try
-                Some(arr.Slice(index, 4), (index + 4, arr))
-            with
-                | _ -> None
-        | Double -> 
-            try
-                Some(arr.Slice(index, 8), (index + 8, arr))
+                Some(span.Slice(0, 8), span.Slice(8))
             with
                 | _ -> None
 
 
-let readerInt : ReaderParser<byte[]> = readerItem Int
+let intBytes : Parser<ArraySegment<byte>> = item Int
 
 
-let readerDouble : ReaderParser<byte[]> = readerItem Double
-
-
-let arrayInt = arrayItem Int
-
-
-let arrayDouble = arrayItem Double
-
-
-
-// let takeIntReader (reader : BinaryReader) : byte[] * BinaryReader = 
-//     (reader.ReadBytes(4), reader)
-
-// let takeIntArray (arr : byte[]) : byte[] * byte[] =
-//     (Array.get 4 arr, arr)
+let doubleBytes : Parser<ArraySegment<byte>> = item Double
 
 
 // TODO - same as above
-let bindRead (f : 'a -> ReaderParser<'b>) (parser : ReaderParser<'a>) : ReaderParser<'b> =
-    fun (reader : BinaryReader) ->
-        reader
+let bind (f : 'a -> Parser<'b>) (parser : Parser<'a>) : Parser<'b> =
+    fun (span) ->
+        span
         |> parser
         |> Option.bind (fun (item, reader') -> 
             (f item) reader')
 
 
-let bindArray (f : 'a -> ArrayParser<'b>) (parser : ArrayParser<'a>) : ArrayParser<'b> =
-    fun state ->
-        state
-        |> parser
-        |> Option.bind (fun (item, state') ->
-            (f item) state')
 
-
-let mapRead (f : 'a -> 'b) (parser : ReaderParser<'a>) : ReaderParser<'b> =
-    fun reader ->
-        reader
+let map (f : 'a -> 'b) (parser : Parser<'a>) : Parser<'b> =
+    fun arr ->
+        arr
         |> parser
         |> Option.map (fun (item, reader') ->
             (f item, reader'))
 
 
-let zero : ReaderParser<'a> = fun (reader : BinaryReader) -> None
+let zero : Parser<'a> = fun (arr : ArraySegment<byte>) -> None
 
 
-let ret it : ReaderParser<'a> = fun (reader : BinaryReader) -> Some(it, reader)
-
-// let takeDouble (reader : BinaryReader) : byte[] =
-//     reader.ReadBytes(8)
+let ret it : Parser<'a> = fun (arr : ArraySegment<byte>) -> Some(it, arr)
 
 
-
-// change to immutable?
-let reverseBytes (bytes : byte[]) : byte[] =
-    Array.Reverse(bytes)
-    bytes
-
-
-let littleEndianInt (bytes : byte[]) : int =
-    BitConverter.ToInt32(bytes, 0)
-
-
-let littleEndianDouble (bytes: byte[]) : double =
-    BitConverter.ToDouble(bytes, 0)
-
-
-let bigEndianInt (bytes : byte[]) : int =
-    BitConverter.ToInt32(reverseBytes bytes, 0)
-
-
-let bigEndianDouble (bytes : byte[]) : double =
-    BitConverter.ToDouble(reverseBytes bytes, 0)
-
-
-type ReaderParserBuilder() =
-    member this.Bind(parser, f) = bindRead f parser
+type ParserBuilder() =
+    member this.Bind(parser, f) = bind f parser
     member this.Return(item) = ret item
     member this.Zero() = zero
 
 
-let readParse = ReaderParserBuilder()
+let shapeParse = ParserBuilder()
 
 
-// let readThenConvert (converter : byte[] -> double) =
-//     readerDouble
-//     |> mapRead converter
+// I don't know how to not copy paste these. byref errors
+let convertInt endian (bytes : ArraySegment<byte>) : int =
+    let span = ReadOnlySpan<byte>.op_Implicit(bytes)
+
+    match endian with
+    | Little -> BinaryPrimitives.ReadInt32LittleEndian span
+    | Big -> BinaryPrimitives.ReadInt32BigEndian span
 
 
-// let it = readParse {
-//     return "hi"
-// }
-let intIt =
-    readerInt
-    |> mapRead littleEndianInt
+let convertDouble endian (bytes : ArraySegment<byte>) : double =
+    let span = ReadOnlySpan<byte>.op_Implicit(bytes)
+
+    match endian with
+    | Little -> BinaryPrimitives.ReadDoubleLittleEndian span
+    | Big -> BinaryPrimitives.ReadDoubleBigEndian span
+// end byref sensitive code
 
 
-let doubleIt = 
-    readerDouble 
-    |> mapRead littleEndianDouble
+let pInt (converter : ArraySegment<byte> -> int) : Parser<int> =
+    intBytes
+    |> map converter
 
 
-let point = readParse {
-    let! x = doubleIt 
-    let! y = doubleIt
+let pDouble (converter : ArraySegment<byte> -> double) : Parser<double> = 
+    doubleBytes 
+    |> map converter
+
+
+let point op = shapeParse {
+    let! x = op
+    let! y = op
     return { X = x; Y = y }
 }
 
 
-let boundingBox = readParse {
-    let! xMin = doubleIt
-    let! yMin = doubleIt
-    let! xMax = doubleIt
-    let! yMax = doubleIt
+let boundingBox op = shapeParse {
+    let! xMin = op
+    let! yMin = op
+    let! xMax = op
+    let! yMax = op
 
     return { 
         XMin = xMin; 
