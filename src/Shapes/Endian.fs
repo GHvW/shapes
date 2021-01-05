@@ -7,8 +7,8 @@ type SystemEndianness =
     | Big
     | Little
 
-let getEndianness () : SystemEndianness =
-    if BitConverter.IsLittleEndian then
+let determineEndianness n : SystemEndianness =
+    if n = 9994 then
         Little
     else
         Big
