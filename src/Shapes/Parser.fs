@@ -89,6 +89,10 @@ let zero : Parser<'a> = fun (arr : ArraySegment<byte>) -> None
 let ret it : Parser<'a> = fun (arr : ArraySegment<byte>) -> Some(it, arr)
 
 
+let apply (p : Parser<'a -> 'b>) (q : Parser<'a>) : Parser<'b> =
+    p |> bind (fun f -> q |> map f)
+
+
 type ParserBuilder() =
     member this.Bind(parser, f) = bind f parser
     member this.Return(item) = ret item
@@ -126,18 +130,19 @@ let pDouble (converter : ArraySegment<byte> -> double) : Parser<double> =
     |> map converter
 
 
-let point op = shapeParse {
-    let! x = op
-    let! y = op
+let point readDouble = shapeParse {
+    let! x = readDouble
+    let! y = readDouble
     return { X = x; Y = y }
 }
 
 
-let boundingBox op = shapeParse {
-    let! xMin = op
-    let! yMin = op
-    let! xMax = op
-    let! yMax = op
+
+let boundingBox readDouble = shapeParse {
+    let! xMin = readDouble
+    let! yMin = readDouble
+    let! xMax = readDouble
+    let! yMax = readDouble
 
     return { 
         XMin = xMin; 
