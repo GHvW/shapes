@@ -8,11 +8,6 @@ open Shapes
 open Endian
 
 
-// TODO
-// Array, stream, Span, whatever
-// ReadOnlySpan has an implicit operator from A[] and ArraySegment<A> to ReadOnlySpan, so no conversions should be necessary
-// https://docs.microsoft.com/en-us/dotnet/api/system.readonlyspan-1?view=net-5.0
-// ReadOnlySpan.Slice will slice a readonly span into smaller segments
 // use BinaryPrimitives class, https://docs.microsoft.com/en-us/dotnet/api/system.buffers.binary.binaryprimitives?view=net-5.0
 // Main file header, first 4 bytes = 9994. can find endianness based on that
 
@@ -43,18 +38,18 @@ type ReadBytes =
     | Double
 
 
-let item readBytes : Parser<ArraySegment<byte>> =
-    fun (span) ->
+let item readType : Parser<ArraySegment<byte>> =
+    fun (segment) ->
         // let (index, span) = state
-        match readBytes with
+        match readType with
         | Int ->
             try
-                Some(span.Slice(0, 4), span.Slice(4))
+                Some(segment.Slice(0, 4), segment.Slice(4))
             with
                 | _ -> None
         | Double ->
             try
-                Some(span.Slice(0, 8), span.Slice(8))
+                Some(segment.Slice(0, 8), segment.Slice(8))
             with
                 | _ -> None
 
@@ -67,8 +62,8 @@ let doubleBytes : Parser<ArraySegment<byte>> = item Double
 
 // TODO - same as above
 let bind (f : 'a -> Parser<'b>) (parser : Parser<'a>) : Parser<'b> =
-    fun (span) ->
-        span
+    fun (segment) ->
+        segment
         |> parser
         |> Option.bind (fun (item, reader') -> 
             (f item) reader')
@@ -130,15 +125,14 @@ let pDouble (converter : ArraySegment<byte> -> double) : Parser<double> =
     |> map converter
 
 
-let point readDouble = shapeParse {
+let point readDouble : Parser<Point> = shapeParse {
     let! x = readDouble
     let! y = readDouble
     return { X = x; Y = y }
 }
 
 
-
-let boundingBox readDouble = shapeParse {
+let boundingBox readDouble : Parser<BoundingBox> = shapeParse {
     let! xMin = readDouble
     let! yMin = readDouble
     let! xMax = readDouble
@@ -151,3 +145,29 @@ let boundingBox readDouble = shapeParse {
         YMax = yMax 
     }
 }
+
+
+// let both p q =
+//     p
+//     |> bind (fun thep ->
+//         q
+//         |> bind (fun theq -> ret [thep; theq]))
+let both p q = shapeParse {
+    let! first = p
+    let! second = q
+    return [first; second]
+}
+
+
+let take count (parser : Parser<'a>) : Parser<List<'a>> = 
+    seq { 0 .. count }
+    |> Seq.map (fun _ -> parser)
+    |> Seq.fold (fun result p -> shapeParse {
+        let! list = result
+        let! next = p
+        return next::list}) zero
+
+// bind takes?  
+
+let run (p : Parser<'a>) (input : ArraySegment<byte>) = p input
+    
