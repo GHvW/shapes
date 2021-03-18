@@ -32,8 +32,8 @@ type Polygon =
     { BoundingBox : BoundingBox // size 4 array, [Xmin, Ymin, Xmax, Ymax]
       NumParts : int
       NumPoints : int
-      Parts : int[] // size NumParts array
-      Points : Point[] } // size NumPoints array
+      Parts : list<int> // size NumParts array
+      Points : list<Point> } // size NumPoints array
 
 
 // compose with Point instead?

@@ -4,60 +4,28 @@ module Parser
 open System
 open System.IO
 open System.Buffers.Binary
+open System.Collections.Generic
 open Shapes
-open Endian
+open MainFileHeader
 
 
-// use BinaryPrimitives class, https://docs.microsoft.com/en-us/dotnet/api/system.buffers.binary.binaryprimitives?view=net-5.0
-// Main file header, first 4 bytes = 9994. can find endianness based on that
-
-// TODO - these might not work, come back to this
-// type ReaderParser<'a> =  BinaryReader -> Option<'a * BinaryReader>
-
-// using implicit operators from F#
-// let inline readonlyspan (x : ^a) : ReadOnlySpan<'a> = 
-//     (^a : (static member op_Implicit : ^a -> ReadOnlySpan<'a>) x)
-
-// type ArrayParser<'a> = (int * ArraySegment<byte>) -> Option<'a * (int * ArraySegment<byte>)>
-// type Parser<'a> = (int * ReadOnlySpan<byte>) -> Option<'a * (int * ReadOnlySpan<byte>)
-// type Parser<'a> = ReadOnlySpan<byte> -> Option<'a * ReadOnlySpan<byte>>
 type Parser<'a> = ArraySegment<byte> -> Option<'a * ArraySegment<byte>>
 
-// type Parser<'a> =
-//     | Reader of ReaderParser<'a>
-//     | Array of ArrayParser<'a>
+
+let intBytes : Parser<ArraySegment<byte>> = 
+    fun segment ->
+        try
+            Some(segment.Slice(0, 4), segment.Slice(4))
+        with
+            | _ -> None
 
 
-// type Input =
-//     | BinaryReader of BinaryReader
-//     | ByteArray of int * ArraySegment<byte>
-
-
-type ReadBytes =
-    | Int
-    | Double
-
-
-let item readType : Parser<ArraySegment<byte>> =
-    fun (segment) ->
-        // let (index, span) = state
-        match readType with
-        | Int ->
-            try
-                Some(segment.Slice(0, 4), segment.Slice(4))
-            with
-                | _ -> None
-        | Double ->
-            try
-                Some(segment.Slice(0, 8), segment.Slice(8))
-            with
-                | _ -> None
-
-
-let intBytes : Parser<ArraySegment<byte>> = item Int
-
-
-let doubleBytes : Parser<ArraySegment<byte>> = item Double
+let doubleBytes : Parser<ArraySegment<byte>> =
+    fun segment ->
+        try
+            Some(segment.Slice(0, 8), segment.Slice(8))
+        with
+            | _ -> None
 
 
 // TODO - same as above
@@ -65,8 +33,8 @@ let bind (f : 'a -> Parser<'b>) (parser : Parser<'a>) : Parser<'b> =
     fun (segment) ->
         segment
         |> parser
-        |> Option.bind (fun (item, reader') -> 
-            (f item) reader')
+        |> Option.bind (fun (item, rest) -> 
+            (f item) rest)
 
 
 
@@ -74,8 +42,8 @@ let map (f : 'a -> 'b) (parser : Parser<'a>) : Parser<'b> =
     fun arr ->
         arr
         |> parser
-        |> Option.map (fun (item, reader') ->
-            (f item, reader'))
+        |> Option.map (fun (item, rest) ->
+            (f item, rest))
 
 
 let zero : Parser<'a> = fun (arr : ArraySegment<byte>) -> None
@@ -93,81 +61,98 @@ type ParserBuilder() =
     member this.Return(item) = ret item
     member this.Zero() = zero
 
-
 let shapeParse = ParserBuilder()
 
 
-// I don't know how to not copy paste these. byref errors
-let convertInt endian (bytes : ArraySegment<byte>) : int =
-    let span = ReadOnlySpan<byte>.op_Implicit(bytes)
-
-    match endian with
-    | Little -> BinaryPrimitives.ReadInt32LittleEndian span
-    | Big -> BinaryPrimitives.ReadInt32BigEndian span
-
-
-let convertDouble endian (bytes : ArraySegment<byte>) : double =
-    let span = ReadOnlySpan<byte>.op_Implicit(bytes)
-
-    match endian with
-    | Little -> BinaryPrimitives.ReadDoubleLittleEndian span
-    | Big -> BinaryPrimitives.ReadDoubleBigEndian span
 // end byref sensitive code
+let parseLittleDouble (bytes : ArraySegment<byte>) : double =
+    let span = ReadOnlySpan<byte>.op_Implicit(bytes)
+    BinaryPrimitives.ReadDoubleLittleEndian span
 
 
-let pInt (converter : ArraySegment<byte> -> int) : Parser<int> =
-    intBytes
-    |> map converter
+let parseLittleInt (bytes : ArraySegment<byte>) : int =
+    let span = ReadOnlySpan<byte>.op_Implicit(bytes)
+    BinaryPrimitives.ReadInt32LittleEndian span
 
 
-let pDouble (converter : ArraySegment<byte> -> double) : Parser<double> = 
-    doubleBytes 
-    |> map converter
+let parseBigInt (bytes : ArraySegment<byte>) : int =
+    let span = ReadOnlySpan<byte>.op_Implicit(bytes)
+    BinaryPrimitives.ReadInt32BigEndian span
+    
+
+let littleDouble : Parser<double> =
+    doubleBytes |> map parseLittleDouble
 
 
-let point readDouble : Parser<Point> = shapeParse {
-    let! x = readDouble
-    let! y = readDouble
+let bigInt : Parser<int> =
+    intBytes |> map parseBigInt
+
+
+let littleInt : Parser<int> =
+    intBytes |> map parseLittleInt
+
+
+let point : Parser<Point> = shapeParse {
+    let! x = littleDouble
+    let! y = littleDouble
+
     return { X = x; Y = y }
 }
 
 
-let boundingBox readDouble : Parser<BoundingBox> = shapeParse {
-    let! xMin = readDouble
-    let! yMin = readDouble
-    let! xMax = readDouble
-    let! yMax = readDouble
-
-    return { 
-        XMin = xMin; 
-        YMin = yMin; 
-        XMax = xMax; 
-        YMax = yMax 
-    }
-}
-
-
-// let both p q =
-//     p
-//     |> bind (fun thep ->
-//         q
-//         |> bind (fun theq -> ret [thep; theq]))
-let both p q = shapeParse {
-    let! first = p
-    let! second = q
-    return [first; second]
-}
-
-
-let take count (parser : Parser<'a>) : Parser<List<'a>> = 
+let take count (parser : Parser<'a>) : Parser<list<'a>> = 
     seq { 0 .. count }
-    |> Seq.map (fun _ -> parser)
-    |> Seq.fold (fun result p -> shapeParse {
+    |> Seq.fold (fun result _ -> shapeParse {
         let! list = result
-        let! next = p
-        return next::list}) zero
+        let! next = parser
+        return next::list}) (ret [])
 
-// bind takes?  
 
-let run (p : Parser<'a>) (input : ArraySegment<byte>) = p input
-    
+let boundingBox : Parser<BoundingBox> =
+    littleDouble
+    |> take 4
+    |> map (fun bounds ->
+        match bounds with // hopefully this is safe if we were able to read with take 4
+        | [yMax; xMax; yMin; xMin] -> { XMin = xMin; YMin = yMin; XMax = xMax; YMax = yMax })
+        //| _ -> None
+
+
+let mainFileHeaderBounds : Parser<HeaderBounds> = shapeParse {
+    let! bounds = littleDouble |> take 8
+
+    return match bounds with
+           | [mmax; mmin; zmax; zmin; ymax; xmax; ymin; xmin] ->
+               { XMin = xmin
+                 YMin = ymin
+                 XMax = xmax
+                 YMax = ymax
+                 ZMin = if zmin = 0.0 then None else Some(zmin)
+                 ZMax = if zmax = 0.0 then None else Some(zmax)
+                 MMin = if mmin = 0.0 then None else Some(mmin)
+                 MMax = if mmax = 0.0 then None else Some(mmax) }
+}
+        
+
+let mainFileHeader : Parser<MainFileHeader> = shapeParse {
+    let! start = bigInt |> take 7
+    let! version = littleInt
+    let! shapeType = 
+        littleInt 
+        |> map (ShapeType.resolveShapeType >> (Option.defaultValue ShapeType.Null))
+    let! bounds = mainFileHeaderBounds
+
+    return match start with
+           | [fileLength; _; _; _; _; filecode] ->
+               { FileCode = filecode; FileLength = fileLength; Version = version; ShapeType = shapeType; Bounds = bounds }
+}
+
+
+let polygon : Parser<Polygon> = shapeParse {
+    let! bounds = boundingBox
+    let! partsCount = littleInt
+    let! pointsCount = littleInt
+    let! parts = littleInt |> take partsCount
+    let! points = point |> take pointsCount
+
+    return { BoundingBox = bounds; NumParts = partsCount; NumPoints = pointsCount; Parts = parts; Points = points }
+}

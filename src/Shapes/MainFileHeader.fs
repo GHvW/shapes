@@ -4,16 +4,20 @@ module MainFileHeader
 open ShapeType
 // 100 bytes long total
 
-type Header = 
-    { FileCode : int
-      FileLength : int
-      Version : int 
-      ShapeType : ShapeType
-      XMin : double 
+type HeaderBounds =
+    { XMin : double 
       YMin : double
       XMax : double
       YMax : double
-      ZMin : double
-      ZMax : double
-      MMin : double
-      MMax : double }
+      ZMin : Option<double>
+      ZMax : Option<double>
+      MMin : Option<double>
+      MMax : Option<double> }
+
+
+type MainFileHeader = 
+    { FileCode : int
+      FileLength : int
+      Version : int 
+      ShapeType : ShapeType 
+      Bounds : HeaderBounds }
