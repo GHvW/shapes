@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30717.126
+MinimumVisualStudioVersion = 15.0.26124.0
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Shapeshifter", "src\Shapeshifter\Shapeshifter.fsproj", "{AB40F5BC-1ADC-47B8-869D-09E16C2ECF49}"
+EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Shapeshifter.Test", "tests\Shapeshifter.Test\Shapeshifter.Test.fsproj", "{047D1DED-9743-4986-A2A3-EF412460331C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AB40F5BC-1ADC-47B8-869D-09E16C2ECF49}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AB40F5BC-1ADC-47B8-869D-09E16C2ECF49}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AB40F5BC-1ADC-47B8-869D-09E16C2ECF49}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AB40F5BC-1ADC-47B8-869D-09E16C2ECF49}.Release|Any CPU.Build.0 = Release|Any CPU
+		{047D1DED-9743-4986-A2A3-EF412460331C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{047D1DED-9743-4986-A2A3-EF412460331C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{047D1DED-9743-4986-A2A3-EF412460331C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{047D1DED-9743-4986-A2A3-EF412460331C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {27902B78-8823-4002-A1AD-8ADB245F0E95}
+	EndGlobalSection
+EndGlobal

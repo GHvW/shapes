@@ -20,6 +20,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Shapes\Shapes.fsproj" />
+    <ProjectReference Include="..\..\src\Shapeshifter\Shapeshifter.fsproj" />
   </ItemGroup>
 </Project>

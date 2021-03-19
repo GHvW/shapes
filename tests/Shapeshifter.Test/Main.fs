@@ -1,4 +1,4 @@
-﻿module Shapes.Test
+﻿module Shapeshifter.Test
 open Expecto
 
 [<EntryPoint>]
