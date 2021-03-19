@@ -10,6 +10,7 @@ open ShapeType
 open MainFileHeader
 open RecordHeader
 open ShapefileRecords
+open RecordShape
 
 
 type Parser<'a> = ArraySegment<byte> -> Option<'a * ArraySegment<byte>>
@@ -145,7 +146,7 @@ let mainFileHeader : Parser<MainFileHeader> = shapeParse {
     let! bounds = mainFileHeaderBounds
 
     return match start with
-           | [fileLength; _; _; _; _; filecode] ->
+           | [fileLength; _; _; _; _; _; filecode] ->
                { FileCode = filecode; FileLength = fileLength; Version = version; ShapeType = shapeType; Bounds = bounds }
 }
 
@@ -168,17 +169,19 @@ let recordHeader : Parser<RecordHeader> = shapeParse {
 }
 
 
-let polygonRecordContent : Parser<RecordContent<Polygon>> = shapeParse {
+// TODO - constrain to only types that can be in Record Contents. Point, Polygon, Polyline, not Double, Int, etc.
+let asRecordContent (parser : Parser<'a>) : Parser<RecordContent<'a>> = shapeParse {
     let! shapeType = 
         littleInt 
         |> map (resolveShapeType >> Option.defaultValue ShapeType.Null)
-    let! polygon = polygon
+    let! shape = parser
 
-    return { ShapeType = shapeType; Shape = polygon }
+    return { ShapeType = shapeType; Shape = shape }
 }
 
-let polygonShapefileRecord : Parser<ShapefileRecord<Polygon>> = shapeParse {
+
+let shapefileRecord (parser : Parser<RecordContent<'a>>) : Parser<ShapefileRecord<'a>> = shapeParse {
     let! header = recordHeader
-    let! contents = polygonRecordContent
+    let! contents = parser
     return { RecordHeader = header; RecordContent = contents }
 }
