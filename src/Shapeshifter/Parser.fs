@@ -6,7 +6,10 @@ open System.IO
 open System.Buffers.Binary
 open System.Collections.Generic
 open Shapes
+open ShapeType
 open MainFileHeader
+open RecordHeader
+open ShapefileRecords
 
 
 type Parser<'a> = ArraySegment<byte> -> Option<'a * ArraySegment<byte>>
@@ -158,3 +161,24 @@ let polygon : Parser<Polygon> = shapeParse {
 }
 
 
+let recordHeader : Parser<RecordHeader> = shapeParse {
+    let! n = bigInt
+    let! contentLength = bigInt
+    return { RecordNumber = n; ContentLength = contentLength }
+}
+
+
+let polygonRecordContent : Parser<RecordContent<Polygon>> = shapeParse {
+    let! shapeType = 
+        littleInt 
+        |> map (resolveShapeType >> Option.defaultValue ShapeType.Null)
+    let! polygon = polygon
+
+    return { ShapeType = shapeType; Shape = polygon }
+}
+
+let polygonShapefileRecord : Parser<ShapefileRecord<Polygon>> = shapeParse {
+    let! header = recordHeader
+    let! contents = polygonRecordContent
+    return { RecordHeader = header; RecordContent = contents }
+}
