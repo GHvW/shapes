@@ -7,6 +7,8 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Shapeshifter", "src\Shapesh
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Shapeshifter.Test", "tests\Shapeshifter.Test\Shapeshifter.Test.fsproj", "{047D1DED-9743-4986-A2A3-EF412460331C}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Shapeshifter.Example.Console", "Shapeshifter.Example.Console\Shapeshifter.Example.Console.fsproj", "{22507C0E-90B6-46D1-8175-87194FCAE18C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{047D1DED-9743-4986-A2A3-EF412460331C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{047D1DED-9743-4986-A2A3-EF412460331C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{047D1DED-9743-4986-A2A3-EF412460331C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{22507C0E-90B6-46D1-8175-87194FCAE18C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{22507C0E-90B6-46D1-8175-87194FCAE18C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{22507C0E-90B6-46D1-8175-87194FCAE18C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{22507C0E-90B6-46D1-8175-87194FCAE18C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

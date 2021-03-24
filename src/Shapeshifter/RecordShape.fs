@@ -7,7 +7,7 @@ type RecordShape =
     | Polygon of Polygon
 
 
-let asRecordShape shape : Option<RecordShape> =
+let asRecordShape (shape : 'a) : Option<RecordShape> =
     match shape with
     | Point p -> Some(Point(p))
     | Polygon p -> Some(Polygon(p))
