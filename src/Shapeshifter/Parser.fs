@@ -105,7 +105,7 @@ let point : Parser<Point> = shapeParse {
 
 
 let take count (parser : Parser<'a>) : Parser<list<'a>> = 
-    seq { 0 .. count }
+    seq { 0 .. (count - 1) }
     |> Seq.fold (fun result _ -> shapeParse {
         let! list = result
         let! next = parser
